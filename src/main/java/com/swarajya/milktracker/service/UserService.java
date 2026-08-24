@@ -14,6 +14,10 @@ public interface UserService {
     UserResponse createUser(CreateUserRequest request);
 
     UserResponse getUserById(UUID id);
+
     UserResponse getUserByEmail(String email);
+
     LoginResponse login(LoginRequest request);
+
+    LoginResponse refreshToken(String refreshToken);
 }

@@ -5,15 +5,18 @@ public class LoginResponse {
     private String accessToken;
     private String tokenType;
     private long expiresIn;
+    private String refreshToken;
 
     public LoginResponse(
             String accessToken,
+            String refreshToken,
             String tokenType,
             long expiresIn
     ) {
         this.accessToken = accessToken;
         this.tokenType = tokenType;
         this.expiresIn = expiresIn;
+        this.refreshToken = refreshToken;
     }
 
     public String getAccessToken() {
@@ -26,5 +29,9 @@ public class LoginResponse {
 
     public long getExpiresIn() {
         return expiresIn;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
     }
 }
