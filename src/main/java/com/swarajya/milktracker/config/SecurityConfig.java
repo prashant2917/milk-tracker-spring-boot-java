@@ -1,5 +1,6 @@
 package com.swarajya.milktracker.config;
 
+import com.swarajya.milktracker.security.JwtAuthenticationEntryPoint;
 import com.swarajya.milktracker.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,13 +19,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+
     public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            JwtAuthenticationEntryPoint authenticationEntryPoint
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
-@Bean
+    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
@@ -41,10 +46,16 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         )
                 )
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(
+                                authenticationEntryPoint
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/register",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/api/auth/refresh"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

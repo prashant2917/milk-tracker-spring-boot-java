@@ -4,6 +4,7 @@ import com.swarajya.milktracker.dto.request.CreateUserRequest;
 import com.swarajya.milktracker.dto.request.LoginRequest;
 import com.swarajya.milktracker.dto.response.LoginResponse;
 import com.swarajya.milktracker.dto.response.UserResponse;
+import com.swarajya.milktracker.entity.RefreshToken;
 import com.swarajya.milktracker.entity.User;
 import com.swarajya.milktracker.exception.DuplicateEmailException;
 import com.swarajya.milktracker.exception.UserNotFoundException;
@@ -26,16 +27,19 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
 
-     public UserServiceImpl(UserRepository userRepository,
-                            PasswordEncoder passwordEncoder,
-                            AuthenticationManager authenticationManager,
-                            JwtService jwtService) {
+    public UserServiceImpl(UserRepository userRepository,
+                           PasswordEncoder passwordEncoder,
+                           AuthenticationManager authenticationManager,
+                           JwtService jwtService,
+                           RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -115,17 +119,61 @@ public class UserServiceImpl implements UserService {
                         .authorities("USER")
                         .build();
 
-        String token = jwtService.generateToken(userDetails);
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken =
+                refreshTokenService.createRefreshToken(user);
 
         return new LoginResponse(
-                token,
+                accessToken,
+                refreshToken,
                 "Bearer",
-                3600000
+                900000
+        );
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse refreshToken(
+            String rawRefreshToken
+    ) {
+
+        RefreshToken oldRefreshToken =
+                refreshTokenService.validateRefreshToken(
+                        rawRefreshToken
+                );
+
+        User user = oldRefreshToken.getUser();
+
+        // Revoke old refresh token
+        refreshTokenService.revokeToken(
+                oldRefreshToken
+        );
+
+        UserDetails userDetails =
+                org.springframework.security.core.userdetails.User
+                        .withUsername(user.getEmail())
+                        .password(user.getPassword())
+                        .authorities("USER")
+                        .build();
+
+        // Generate new access token
+        String newAccessToken =
+                jwtService.generateToken(userDetails);
+
+        // Generate new refresh token
+        String newRefreshToken =
+                refreshTokenService.createRefreshToken(user);
+
+        return new LoginResponse(
+                newAccessToken,
+                newRefreshToken,
+                "Bearer",
+                900000
         );
     }
 
 
- private UserResponse mapToUserResponse(User user) {
+    private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getUuid());
         response.setFirstName(user.getFirstName());
