@@ -6,17 +6,21 @@ import com.swarajya.milktracker.dto.response.LoginResponse;
 import com.swarajya.milktracker.dto.response.UserResponse;
 import com.swarajya.milktracker.entity.RefreshToken;
 import com.swarajya.milktracker.entity.User;
+import com.swarajya.milktracker.entity.UserSettings;
 import com.swarajya.milktracker.exception.DuplicateEmailException;
 import com.swarajya.milktracker.exception.UserNotFoundException;
 import com.swarajya.milktracker.repository.UserRepository;
+import com.swarajya.milktracker.repository.UserSettingsRepository;
 import com.swarajya.milktracker.security.JwtService;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -28,21 +32,27 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final UserSettingsRepository userSettingsRepository;
+    @Value("${milk.default-price-per-liter}")
+    private BigDecimal defaultPricePerLiter;
 
 
     public UserServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            AuthenticationManager authenticationManager,
                            JwtService jwtService,
-                           RefreshTokenService refreshTokenService) {
+                           RefreshTokenService refreshTokenService,
+                           UserSettingsRepository userSettingsRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.userSettingsRepository = userSettingsRepository;
     }
 
     @Override
+    @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         String email = request.getEmail()
                 .trim()
@@ -67,6 +77,11 @@ public class UserServiceImpl implements UserService {
                 passwordEncoder.encode(request.getPassword())
         );
         User savedUser = userRepository.save(user);
+        UserSettings settings = new UserSettings();
+        settings.setUser(savedUser);
+        settings.setDefaultPricePerLiter(defaultPricePerLiter);
+
+        userSettingsRepository.save(settings);
         return mapToUserResponse(savedUser);
     }
 
