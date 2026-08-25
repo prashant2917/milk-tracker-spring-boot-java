@@ -163,4 +163,49 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(response);
     }
+
+    @ExceptionHandler(InvalidMilkQuantityException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidMilkQuantity(
+            InvalidMilkQuantityException ex
+    ) {
+        return ResponseEntity
+                .badRequest()
+                .body(new ErrorResponse(
+                        LocalDateTime.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                        ex.getMessage(),
+                        ""
+                ));
+    }
+
+    @ExceptionHandler(MilkEntryNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMilkEntryNotFound(
+            MilkEntryNotFoundException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        LocalDateTime.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                        ex.getMessage(),
+                        ""
+                ));
+    }
+
+    @ExceptionHandler(UserSettingsNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserSettingsNotFound(
+            UserSettingsNotFoundException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        LocalDateTime.now(),
+                        HttpStatus.NOT_FOUND.value(),
+                        HttpStatus.NOT_FOUND.getReasonPhrase(),
+                        ex.getMessage(),
+                        ""
+                ));
+    }
 }
